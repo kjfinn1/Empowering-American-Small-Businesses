@@ -1,0 +1,23 @@
+Maybe filter so that no NAs in funding_office_id or funding_office_name or agency versions of these variables? import_dataset()
+
+Why do we need to remove NAs concerning IDV_CONTRACTING_AGENCY_ID?
+
+Do we need IDV_PIID, PIID?
+
+Do we need EVALUATED_PREFERENCE?
+
+Do we need IDV_CONTRACTING_AGENCY_ID?
+
+Should we just strip the whole dataframe of whitespace? [Yeah, why not]
+
+What does the SAM dataset actually add to our modeling right now? What could it if we used it properly?
+
+Can we use DOLLARS_OBLIGATED? I think no? We should assess model performance when filtering by >0 of it vs not.
+
+Do we see heterogeneity in recommendations?
+
+Get cosine similarities of office names as a way to clean the offices?
+
+Maybe output the agency originally, and then output the office from that (nested model)
+
+Could also look at it as an NLP/ETA problem b/c it's a sparse matrix and use PCA?

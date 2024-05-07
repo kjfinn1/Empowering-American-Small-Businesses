@@ -1,0 +1,64 @@
+---
+title: "Test_LDA"
+output: html_document
+date: "2024-01-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+library(MASS)
+library(tidyverse)
+library(caret)
+```
+
+# Import & Clean
+```{r}
+df = read.csv("../test_sampleR2.csv") #sample 100,000
+#df = sample_n(df, 6000)
+
+agencies = df %>% dplyr::select(FUNDING_OFFICE_NAME) %>% table()
+top_agencies = agencies[agencies > 5] %>% names()
+
+df = df %>% 
+  filter(CO_BUS_SIZE_DETERMINATION=="SMALL BUSINESS") %>% 
+  filter(FUNDING_OFFICE_NAME %in% top_agencies) %>%
+  dplyr::select(FUNDING_OFFICE_NAME, ADDRESS_STATE, CORP_ENTITY_NOT_TAX_EXEMPT, CORP_ENTITY_TAX_EXEMPT, PARTNERSHIP_OR_LLP, SOLE_PROPREITORSHIP, MANUFACTURER_OF_GOODS, RESEARCH_AND_DEVELOPMENT, SERVICE_PROVIDER, SUBCHAPTER_S_CORPORATION, LIMITED_LIABILITY_CORPORATION, FOR_PROFIT_ORGANIZATION)
+
+cleaned_df = df %>% select_if(~ !any(is.na(.)))
+cleaned_df = as.data.frame(lapply(cleaned_df, as.factor))
+```
+
+# Make Model
+```{r}
+train_rows = seq(1, 75000, 1)
+test_rows = seq(75001, nrow(cleaned_df), 1)
+train_set = cleaned_df[train_rows,]
+test_set = cleaned_df[test_rows,]
+correct_classes = test_set$FUNDING_OFFICE_NAME
+test_model = lda(FUNDING_OFFICE_NAME~., train_set)
+```
+
+# Assess Model
+```{r}
+#basic assessment (top agency) 51% accurate
+predictions = predict(test_model, test_set)
+#conf_matrix = confusionMatrix(predictions$class, correct_classes)
+#conf_matrix$overall
+
+#list assessment (top n agencies on 50k training) 1: 25%, 3: 41%, 5: 50%, 10: 65%
+#list assessment (top n agencies on 75k training) 1: 28%, 3: 43%, 5: 51%, 10: 63%
+prediction_list = as.data.frame(predictions$posterior) %>% transpose()
+
+list_accuracies = c()
+for (i in 1:length(prediction_list)) {
+  top_n = names((prediction_list[[i]] %>% unlist() %>% sort(decreasing=T))[1:10])
+  bool = correct_classes[i] %in% top_n
+  list_accuracies = append(list_accuracies, bool)
+}
+sum(list_accuracies) / length(list_accuracies)
+```
